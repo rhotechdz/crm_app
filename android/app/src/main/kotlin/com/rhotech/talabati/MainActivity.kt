@@ -1,4 +1,4 @@
-package com.example.crm_app
+package com.rhotech.talabati
 
 import io.flutter.embedding.android.FlutterActivity
 
