@@ -283,40 +283,31 @@ class _ProductCard extends ConsumerWidget {
                     const Spacer(),
                     PopupMenuButton<String>(
                       icon: const Icon(Icons.more_vert, size: 20),
-                      onSelected: (value) async {
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 140),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (value) {
                         if (value == 'delete') {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Delete Product'),
-                              content: Text('Are you sure you want to delete ${product.name}?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                  child: const Text('Delete'),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirm == true) {
-                            ref.read(productsProvider.notifier).deleteProduct(product.id);
-                          }
+                          _showDeleteConfirmation(context, ref, product);
                         }
                       },
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
+                          height: 44,
                           child: Row(
                             children: [
-                              Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Delete', style: TextStyle(color: Colors.red)),
+                              Icon(Icons.delete_outline_rounded, 
+                                size: 18, 
+                                color: TalabatiColors.danger),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Delete Product', 
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: TalabatiColors.danger,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -328,6 +319,87 @@ class _ProductCard extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, Product product) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(TalabatiRadius.lg)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: TalabatiColors.dangerLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_forever_rounded,
+                color: TalabatiColors.danger,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: TalabatiSpacing.lg),
+            Text(
+              'Delete Product?',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: TalabatiSpacing.sm),
+            Text(
+              'Are you sure you want to delete "${product.name}"? This action cannot be undone.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: TalabatiColors.textSecondary,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: TalabatiSpacing.xl),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: TalabatiColors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(TalabatiRadius.md),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: TalabatiSpacing.base),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ref.read(productsProvider.notifier).deleteProduct(product.id);
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: TalabatiColors.danger,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(TalabatiRadius.md),
+                      ),
+                    ),
+                    child: const Text('Delete'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -261,13 +261,23 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
             else
               SizedBox(
                 height: 220,
-                child: ListView.builder(
+                child: ListView.separated(
                   itemCount: filteredClients.length,
+                  separatorBuilder: (context, index) => const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: TalabatiColors.divider,
+                  ),
                   itemBuilder: (context, index) {
                     final client = filteredClients[index];
                     return ListTile(
-                      title: Text(client.name),
-                      subtitle: Text('${client.phone} - ${client.wilaya}'),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      title: Text(
+                        client.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text('${client.phone} • ${client.wilaya}'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () {
                         setState(() {
                           _selectedClientId = client.id;
