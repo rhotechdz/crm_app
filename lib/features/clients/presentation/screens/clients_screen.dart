@@ -2,23 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:talabati/theme/talabati_theme.dart' hide ClientStatus;
-import 'package:talabati/theme/talabati_theme.dart' as theme;
+import 'package:talabati/theme/talabati_theme.dart';
 import 'package:talabati/widgets/talabati_app_bar.dart';
 import 'package:talabati/widgets/talabati_search_bar.dart';
-import 'package:talabati/widgets/talabati_filter_chips.dart';
-import 'package:talabati/widgets/status_badge.dart';
 import 'package:talabati/widgets/talabati_action_button.dart';
 import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
 import 'package:talabati/features/clients/data/models/client.dart';
-import 'package:talabati/features/orders/presentation/screens/orders_screen.dart';
-
-extension ClientExtension on Client {
-  String get status {
-    if (returnCount >= 3) return theme.ClientStatus.inactive.name;
-    return theme.ClientStatus.active.name;
-  }
-}
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -28,28 +17,13 @@ class ClientsScreen extends ConsumerStatefulWidget {
 }
 
 class _ClientsScreenState extends ConsumerState<ClientsScreen> {
-  int _selectedFilterIndex = 0;
   String _searchQuery = '';
-
-  late final List<String> _filters;
-  late final List<theme.ClientStatus?> _filterValues;
-
-  @override
-  void initState() {
-    super.initState();
-    _filters = ['All', ...theme.ClientStatus.values.map((s) => s.label)];
-    _filterValues = [null, ...theme.ClientStatus.values];
-  }
 
   @override
   Widget build(BuildContext context) {
     final clients = ref.watch(clientsProvider);
-    final theme.ClientStatus? selectedFilter = _filterValues[_selectedFilterIndex];
 
     final filteredList = clients.where((c) {
-      if (selectedFilter != null && c.status != selectedFilter.name) {
-        return false;
-      }
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final nameMatches = c.name.toLowerCase().contains(query);
@@ -83,12 +57,6 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 TalabatiSearchBar(
                   hintText: 'Search by name or phone...',
                   onChanged: (val) => setState(() => _searchQuery = val),
-                ),
-                const SizedBox(height: TalabatiSpacing.md),
-                TalabatiFilterChips(
-                  options: _filters,
-                  selectedIndex: _selectedFilterIndex,
-                  onSelected: (index) => setState(() => _selectedFilterIndex = index),
                 ),
               ],
             ),
@@ -133,7 +101,6 @@ class _ClientCard extends StatelessWidget {
     ];
     final avatarColor = colors[client.id.hashCode.abs() % 6];
 
-    final statusModel = theme.ClientStatus.values.byName(client.status);
     final showWarning = client.returnCount >= 3;
 
     return Card(
@@ -189,11 +156,6 @@ class _ClientCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                StatusBadge(
-                  label: statusModel.label,
-                  backgroundColor: statusModel.backgroundColor,
-                  textColor: statusModel.textColor,
-                ),
               ],
             ),
             const Divider(height: TalabatiSpacing.xl),
@@ -240,17 +202,6 @@ class _ClientCard extends StatelessWidget {
                     },
                   ),
                 ],
-                const SizedBox(width: TalabatiSpacing.sm),
-                TalabatiActionButton(
-                  icon: Icons.receipt_long_outlined,
-                  isPrimary: false,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const OrdersScreen()),
-                    );
-                  },
-                ),
               ],
             ),
           ],
