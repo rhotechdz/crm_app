@@ -1,26 +1,66 @@
 import 'package:flutter/material.dart';
-import 'package:talabati/theme/talabati_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:talabati/theme/talabati_theme.dart' hide OrderStatus;
+import 'package:talabati/theme/talabati_theme.dart' as theme;
 import 'package:talabati/widgets/talabati_app_bar.dart';
 import 'package:talabati/widgets/talabati_search_bar.dart';
 import 'package:talabati/widgets/talabati_filter_chips.dart';
 import 'package:talabati/widgets/status_badge.dart';
 import 'package:talabati/widgets/talabati_action_button.dart';
+import 'package:talabati/features/orders/presentation/providers/orders_provider.dart';
+import 'package:talabati/features/orders/data/models/order_status.dart';
+import 'package:talabati/features/orders/data/models/order_with_client.dart';
 
-class OrdersScreen extends StatefulWidget {
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen> {
+class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   int _selectedFilterIndex = 0;
-  final List<String> _filters = [
-    'All', 'New', 'Called', 'Confirmed', 'Handed', 'Delivered', 'Collected', 'Returned', 'Cancelled'
-  ];
+  String _searchQuery = '';
+
+  late final List<String> _filters;
+  late final List<theme.OrderStatus?> _filterValues;
+
+  @override
+  void initState() {
+    super.initState();
+    _filters = ['All', ...theme.OrderStatus.values.map((s) => s.label)];
+    _filterValues = [null, ...theme.OrderStatus.values];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final ordersState = ref.watch(ordersProvider);
+    final allOrders = ordersState.orders;
+
+    final theme.OrderStatus? selectedStatus = _filterValues[_selectedFilterIndex];
+
+    final filteredList = allOrders.where((entry) {
+      final order = entry.order;
+      if (selectedStatus != null && order.status.name != selectedStatus.name) {
+        return false;
+      }
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final ordId = 'ord-${order.id}'.toLowerCase();
+        final clientName = entry.clientName.toLowerCase();
+        final clientPhone = entry.clientPhone.toLowerCase();
+
+        if (!clientName.contains(query) &&
+            !clientPhone.contains(query) &&
+            !ordId.contains(query)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+
     return Scaffold(
       appBar: const TalabatiAppBar(title: 'Talabati'),
       body: Column(
@@ -36,12 +76,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 Text(
-                  '128 Total Orders Today',
+                  '${allOrders.length} Total Orders Today',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: TalabatiSpacing.lg),
-                const TalabatiSearchBar(
+                TalabatiSearchBar(
                   hintText: 'Search by client, phone or tracking ID',
+                  onChanged: (val) => setState(() => _searchQuery = val),
                 ),
                 const SizedBox(height: TalabatiSpacing.md),
                 TalabatiFilterChips(
@@ -55,10 +96,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: 5,
+              itemCount: filteredList.length,
               separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.base),
               itemBuilder: (context, index) {
-                return const _OrderCard();
+                return _OrderCard(entry: filteredList[index]);
               },
             ),
           ),
@@ -72,11 +113,62 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
-class _OrderCard extends StatelessWidget {
-  const _OrderCard();
+class _OrderCard extends ConsumerWidget {
+  final OrderWithClient entry;
+
+  const _OrderCard({required this.entry});
+
+  void _showStatusBottomSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Change Status',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ...theme.OrderStatus.values.map((status) {
+                return ListTile(
+                  leading: StatusBadge(
+                    label: status.label,
+                    backgroundColor: status.backgroundColor,
+                    textColor: status.textColor,
+                  ),
+                  title: Text(status.label),
+                  onTap: () {
+                    final modelStatus = OrderStatus.values.byName(status.name);
+                    ref.read(ordersProvider.notifier).updateOrderStatus(
+                          entry.order.id,
+                          modelStatus,
+                        );
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final order = entry.order;
+    final themeStatus = theme.OrderStatus.values.byName(order.status.name);
+    final formattedAmount = NumberFormat('#,###', 'en_US').format(order.totalAmount) + ' DA';
+    final formattedDate = DateFormat('MMM d, yyyy').format(order.createdAt);
+    final displayId = 'ORD-${order.id}';
+
     return Card(
       child: Padding(
         padding: TalabatiSpacing.cardPadding,
@@ -86,13 +178,13 @@ class _OrderCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Ahmed Benali',
+                  entry.clientName,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 StatusBadge(
-                  label: OrderStatus.handedToCourier.label,
-                  backgroundColor: OrderStatus.handedToCourier.backgroundColor,
-                  textColor: OrderStatus.handedToCourier.textColor,
+                  label: themeStatus.label,
+                  backgroundColor: themeStatus.backgroundColor,
+                  textColor: themeStatus.textColor,
                 ),
               ],
             ),
@@ -101,11 +193,11 @@ class _OrderCard extends StatelessWidget {
               children: [
                 const Icon(Icons.location_on_outlined, size: 16, color: TalabatiColors.textSecondary),
                 const SizedBox(width: TalabatiSpacing.xs),
-                Text('Algiers, DZ', style: Theme.of(context).textTheme.bodyMedium),
+                Text('${entry.clientWilaya}, DZ', style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(width: TalabatiSpacing.lg),
                 const Icon(Icons.calendar_today_outlined, size: 14, color: TalabatiColors.textSecondary),
                 const SizedBox(width: TalabatiSpacing.xs),
-                Text('30 Apr, 2026', style: Theme.of(context).textTheme.bodyMedium),
+                Text(formattedDate, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
             const SizedBox(height: TalabatiSpacing.sm),
@@ -113,7 +205,7 @@ class _OrderCard extends StatelessWidget {
               children: [
                 const Icon(Icons.tag, size: 16, color: TalabatiColors.textSecondary),
                 const SizedBox(width: TalabatiSpacing.xs),
-                Text('ORD-928347', style: Theme.of(context).textTheme.bodyMedium),
+                Text(displayId, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
             const Divider(height: TalabatiSpacing.xl),
@@ -130,7 +222,7 @@ class _OrderCard extends StatelessWidget {
                           ),
                     ),
                     Text(
-                      '6,200 DA',
+                      formattedAmount,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontSize: 18,
                           ),
@@ -140,12 +232,15 @@ class _OrderCard extends StatelessWidget {
                 const Spacer(),
                 TalabatiActionButton(
                   icon: Icons.phone_enabled_rounded,
-                  onTap: () {},
+                  onTap: () {
+                    final uri = Uri.parse('tel:${entry.clientPhone}');
+                    launchUrl(uri);
+                  },
                 ),
                 const SizedBox(width: TalabatiSpacing.sm),
                 IconButton(
                   icon: const Icon(Icons.more_vert),
-                  onPressed: () {},
+                  onPressed: () => _showStatusBottomSheet(context, ref),
                 ),
               ],
             ),

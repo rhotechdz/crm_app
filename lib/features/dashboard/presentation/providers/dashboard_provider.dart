@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talabati/features/dashboard/data/repositories/dashboard_repository.dart';
 
@@ -73,52 +74,57 @@ class DashboardNotifier extends Notifier<DashboardState> {
 
   @override
   DashboardState build() {
-    loadDashboard();
+    Future.microtask(() => loadDashboard());
     return const DashboardState(isLoading: true);
   }
 
   Future<void> loadDashboard() async {
     state = state.copyWith(isLoading: true);
 
-    final totalOrdersFuture = _repository.getTotalOrdersCount();
-    final todaysOrdersFuture = _repository.getTodaysOrdersCount();
-    final pendingConfirmationFuture = _repository.getPendingConfirmationCount();
-    final withCourierFuture = _repository.getWithCourierCount();
-    final deliveredAwaitingCollectionFuture = _repository
-        .getDeliveredAwaitingCollectionCount();
-    final monthlyRevenueFuture = _repository.getMonthlyRevenue();
-    final monthlyProfitFuture = _repository.getMonthlyProfit();
-    final pendingRevenueFuture = _repository.getPendingRevenue();
-    final returnsThisMonthFuture = _repository.getReturnsThisMonthCount();
-    final topReturningClientsFuture = _repository.getTopReturningClients();
-    final recentOrdersFuture = _repository.getRecentOrders();
+    try {
+      final totalOrdersFuture = _repository.getTotalOrdersCount();
+      final todaysOrdersFuture = _repository.getTodaysOrdersCount();
+      final pendingConfirmationFuture = _repository.getPendingConfirmationCount();
+      final withCourierFuture = _repository.getWithCourierCount();
+      final deliveredAwaitingCollectionFuture = _repository
+          .getDeliveredAwaitingCollectionCount();
+      final monthlyRevenueFuture = _repository.getMonthlyRevenue();
+      final monthlyProfitFuture = _repository.getMonthlyProfit();
+      final pendingRevenueFuture = _repository.getPendingRevenue();
+      final returnsThisMonthFuture = _repository.getReturnsThisMonthCount();
+      final topReturningClientsFuture = _repository.getTopReturningClients();
+      final recentOrdersFuture = _repository.getRecentOrders();
 
-    await Future.wait([
-      totalOrdersFuture,
-      todaysOrdersFuture,
-      pendingConfirmationFuture,
-      withCourierFuture,
-      deliveredAwaitingCollectionFuture,
-      monthlyRevenueFuture,
-      monthlyProfitFuture,
-      pendingRevenueFuture,
-      returnsThisMonthFuture,
-      topReturningClientsFuture,
-      recentOrdersFuture,
-    ]);
+      await Future.wait([
+        totalOrdersFuture,
+        todaysOrdersFuture,
+        pendingConfirmationFuture,
+        withCourierFuture,
+        deliveredAwaitingCollectionFuture,
+        monthlyRevenueFuture,
+        monthlyProfitFuture,
+        pendingRevenueFuture,
+        returnsThisMonthFuture,
+        topReturningClientsFuture,
+        recentOrdersFuture,
+      ]);
 
-    state = DashboardState(
-      totalOrders: await totalOrdersFuture,
-      todaysOrders: await todaysOrdersFuture,
-      pendingConfirmation: await pendingConfirmationFuture,
-      withCourier: await withCourierFuture,
-      deliveredAwaitingCollection: await deliveredAwaitingCollectionFuture,
-      monthlyRevenue: await monthlyRevenueFuture,
-      monthlyProfit: await monthlyProfitFuture,
-      pendingRevenue: await pendingRevenueFuture,
-      returnsThisMonth: await returnsThisMonthFuture,
-      topReturningClients: await topReturningClientsFuture,
-      recentOrders: await recentOrdersFuture,
-    );
+      state = DashboardState(
+        totalOrders: await totalOrdersFuture,
+        todaysOrders: await todaysOrdersFuture,
+        pendingConfirmation: await pendingConfirmationFuture,
+        withCourier: await withCourierFuture,
+        deliveredAwaitingCollection: await deliveredAwaitingCollectionFuture,
+        monthlyRevenue: await monthlyRevenueFuture,
+        monthlyProfit: await monthlyProfitFuture,
+        pendingRevenue: await pendingRevenueFuture,
+        returnsThisMonth: await returnsThisMonthFuture,
+        topReturningClients: await topReturningClientsFuture,
+        recentOrders: await recentOrdersFuture,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+      debugPrint('Dashboard load error: $e');
+    }
   }
 }
