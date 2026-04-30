@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-import 'package:talabati/core/theme/app_colors.dart';
+import 'package:talabati/theme/talabati_theme.dart' hide OrderStatus;
 import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
 import 'package:talabati/features/orders/data/models/delivery_company.dart';
 import 'package:talabati/features/orders/data/models/order.dart';
@@ -315,15 +315,31 @@ class _OrderDetailContentState extends ConsumerState<_OrderDetailContent> {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (_nextStatus(order.status) != null)
-              ElevatedButton(
-                onPressed: () => _handleNextAction(context, ref, order),
-                child: Text(_nextActionLabel(order.status)!),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ElevatedButton(
+                  onPressed: () => _handleNextAction(context, ref, order),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: TalabatiColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 54),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: TalabatiRadius.buttonRadius,
+                    ),
+                    elevation: 0,
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  child: Text(_nextActionLabel(order.status)!),
+                ),
               ),
             Row(
               children: [
@@ -331,12 +347,13 @@ class _OrderDetailContentState extends ConsumerState<_OrderDetailContent> {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: AppColors.danger,
-                      side: BorderSide(
-                        color: AppColors.danger.withValues(alpha: 0.3),
+                      foregroundColor: TalabatiColors.danger,
+                      side: const BorderSide(
+                        color: TalabatiColors.danger,
+                        width: 1,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: TalabatiRadius.buttonRadius,
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -355,10 +372,10 @@ class _OrderDetailContentState extends ConsumerState<_OrderDetailContent> {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: AppColors.textSecondary,
-                      side: const BorderSide(color: AppColors.divider),
+                      foregroundColor: TalabatiColors.textSecondary,
+                      side: const BorderSide(color: TalabatiColors.border),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: TalabatiRadius.buttonRadius,
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
