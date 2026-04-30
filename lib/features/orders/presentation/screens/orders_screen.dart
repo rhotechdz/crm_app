@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:talabati/theme/talabati_theme.dart' hide OrderStatus;
@@ -48,13 +49,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       }
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
-        final ordId = 'ord-${order.id}'.toLowerCase();
+        final trackingNumber = (order.trackingNumber ?? '').toLowerCase();
         final clientName = entry.clientName.toLowerCase();
         final clientPhone = entry.clientPhone.toLowerCase();
 
         if (!clientName.contains(query) &&
             !clientPhone.contains(query) &&
-            !ordId.contains(query)) {
+            !trackingNumber.contains(query)) {
           return false;
         }
       }
@@ -121,14 +122,16 @@ class _OrderCard extends ConsumerWidget {
   void _showStatusBottomSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               const Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text(
@@ -156,18 +159,18 @@ class _OrderCard extends ConsumerWidget {
               }),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final order = entry.order;
     final themeStatus = theme.OrderStatus.values.byName(order.status.name);
-    final formattedAmount = NumberFormat('#,###', 'en_US').format(order.totalAmount) + ' DA';
+    final formattedAmount = '${NumberFormat('#,###', 'en_US').format(order.totalAmount)} DA';
     final formattedDate = DateFormat('MMM d, yyyy').format(order.createdAt);
-    final displayId = 'ORD-${order.id}';
 
     return Card(
       child: Padding(
@@ -200,14 +203,7 @@ class _OrderCard extends ConsumerWidget {
                 Text(formattedDate, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
-            const SizedBox(height: TalabatiSpacing.sm),
-            Row(
-              children: [
-                const Icon(Icons.tag, size: 16, color: TalabatiColors.textSecondary),
-                const SizedBox(width: TalabatiSpacing.xs),
-                Text(displayId, style: Theme.of(context).textTheme.bodyMedium),
-              ],
-            ),
+
             const Divider(height: TalabatiSpacing.xl),
             Row(
               children: [
@@ -238,9 +234,27 @@ class _OrderCard extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(width: TalabatiSpacing.sm),
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () => _showStatusBottomSheet(context, ref),
+                TalabatiActionButton(
+                  icon: FontAwesomeIcons.whatsapp,
+                  isPrimary: false,
+                  backgroundColor: Colors.green,
+                  iconColor: Colors.white,
+                  onTap: () {
+                    // WhatsApp scheme to open chat
+                    final phone = entry.clientPhone.replaceAll(RegExp(r'[^\d+]'), '');
+                    // For Algeria, typically start with +213 if not already
+                    final formattedPhone = phone.startsWith('0') 
+                        ? '+213${phone.substring(1)}' 
+                        : phone;
+                    final uri = Uri.parse('whatsapp://send?phone=$formattedPhone');
+                    launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                ),
+                const SizedBox(width: TalabatiSpacing.sm),
+                TalabatiActionButton(
+                  icon: Icons.more_vert,
+                  isPrimary: false,
+                  onTap: () => _showStatusBottomSheet(context, ref),
                 ),
               ],
             ),

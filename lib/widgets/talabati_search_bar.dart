@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:talabati/theme/talabati_theme.dart';
 
 class TalabatiSearchBar extends StatelessWidget {
   final String hintText;

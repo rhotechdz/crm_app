@@ -5,12 +5,16 @@ class TalabatiActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool isPrimary;
+  final Color? iconColor;
+  final Color? backgroundColor;
 
   const TalabatiActionButton({
     super.key,
     required this.icon,
     required this.onTap,
     this.isPrimary = true,
+    this.iconColor,
+    this.backgroundColor,
   });
 
   @override
@@ -19,9 +23,9 @@ class TalabatiActionButton extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: isPrimary ? TalabatiColors.primary : TalabatiColors.surface,
+        color: backgroundColor ?? (isPrimary ? TalabatiColors.primary : TalabatiColors.surface),
         shape: BoxShape.circle,
-        border: isPrimary ? null : Border.all(color: TalabatiColors.border),
+        border: (isPrimary || backgroundColor != null) ? null : Border.all(color: TalabatiColors.border),
       ),
       child: Material(
         color: Colors.transparent,
@@ -30,7 +34,7 @@ class TalabatiActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Icon(
             icon,
-            color: isPrimary ? Colors.white : TalabatiColors.textSecondary,
+            color: iconColor ?? (isPrimary ? Colors.white : TalabatiColors.textSecondary),
             size: 20,
           ),
         ),

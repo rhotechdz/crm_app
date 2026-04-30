@@ -1,24 +1,66 @@
 import 'package:flutter/material.dart';
-import 'package:talabati/theme/talabati_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:talabati/theme/talabati_theme.dart' hide ClientStatus;
+import 'package:talabati/theme/talabati_theme.dart' as theme;
 import 'package:talabati/widgets/talabati_app_bar.dart';
 import 'package:talabati/widgets/talabati_search_bar.dart';
 import 'package:talabati/widgets/talabati_filter_chips.dart';
 import 'package:talabati/widgets/status_badge.dart';
 import 'package:talabati/widgets/talabati_action_button.dart';
+import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
+import 'package:talabati/features/clients/data/models/client.dart';
+import 'package:talabati/features/orders/presentation/screens/orders_screen.dart';
 
-class ClientsScreen extends StatefulWidget {
+extension ClientExtension on Client {
+  String get status {
+    if (returnCount >= 3) return theme.ClientStatus.inactive.name;
+    return theme.ClientStatus.active.name;
+  }
+}
+
+class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
 
   @override
-  State<ClientsScreen> createState() => _ClientsScreenState();
+  ConsumerState<ClientsScreen> createState() => _ClientsScreenState();
 }
 
-class _ClientsScreenState extends State<ClientsScreen> {
+class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   int _selectedFilterIndex = 0;
-  final List<String> _filters = ['All', 'VIP', 'Recent', 'Inactive'];
+  String _searchQuery = '';
+
+  late final List<String> _filters;
+  late final List<theme.ClientStatus?> _filterValues;
+
+  @override
+  void initState() {
+    super.initState();
+    _filters = ['All', ...theme.ClientStatus.values.map((s) => s.label)];
+    _filterValues = [null, ...theme.ClientStatus.values];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final clients = ref.watch(clientsProvider);
+    final theme.ClientStatus? selectedFilter = _filterValues[_selectedFilterIndex];
+
+    final filteredList = clients.where((c) {
+      if (selectedFilter != null && c.status != selectedFilter.name) {
+        return false;
+      }
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final nameMatches = c.name.toLowerCase().contains(query);
+        final phoneMatches = c.phone.toLowerCase().contains(query);
+        if (!nameMatches && !phoneMatches) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+
     return Scaffold(
       appBar: const TalabatiAppBar(title: 'Talabati'),
       body: Column(
@@ -34,12 +76,13 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 Text(
-                  '142 Total Registered Clients',
+                  '${clients.length} Total Registered Clients',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: TalabatiSpacing.lg),
-                const TalabatiSearchBar(
+                TalabatiSearchBar(
                   hintText: 'Search by name or phone...',
+                  onChanged: (val) => setState(() => _searchQuery = val),
                 ),
                 const SizedBox(height: TalabatiSpacing.md),
                 TalabatiFilterChips(
@@ -53,17 +96,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: 4,
+              itemCount: filteredList.length,
               separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.base),
               itemBuilder: (context, index) {
-                final isVip = index == 0;
-                final isHighReturn = index == 1;
-                return _ClientCard(
-                  name: isVip ? 'Fatim-Zahra Mansouri' : (isHighReturn ? 'Karim Belkacem' : 'Yacine Brahimi'),
-                  initials: isVip ? 'FM' : (isHighReturn ? 'KB' : 'YB'),
-                  status: isVip ? ClientStatus.vip : ClientStatus.active,
-                  isHighReturn: isHighReturn,
-                );
+                return _ClientCard(client: filteredList[index]);
               },
             ),
           ),
@@ -78,32 +114,28 @@ class _ClientsScreenState extends State<ClientsScreen> {
 }
 
 class _ClientCard extends StatelessWidget {
-  final String name;
-  final String initials;
-  final ClientStatus status;
-  final bool isHighReturn;
+  final Client client;
 
-  const _ClientCard({
-    required this.name,
-    required this.initials,
-    required this.status,
-    this.isHighReturn = false,
-  });
-
-  Color _getAvatarColor(String name) {
-    final colors = [
-      const Color(0xFFFEE2E2),
-      const Color(0xFFFEF3C7),
-      const Color(0xFFD1FAE5),
-      const Color(0xFFDBEAFE),
-      const Color(0xFFE0E7FF),
-      const Color(0xFFF3E8FF),
-    ];
-    return colors[name.length % colors.length];
-  }
+  const _ClientCard({required this.client});
 
   @override
   Widget build(BuildContext context) {
+    final initialsWords = client.name.split(' ').where((w) => w.isNotEmpty).take(2);
+    final initials = initialsWords.map((w) => w[0]).join().toUpperCase();
+
+    final colors = [
+      const Color(0xFFDDE3FF),
+      const Color(0xFFD4F0E0),
+      const Color(0xFFFFE8CC),
+      const Color(0xFFFFD6D6),
+      const Color(0xFFE8D6FF),
+      const Color(0xFFD6F0FF),
+    ];
+    final avatarColor = colors[client.id.hashCode.abs() % 6];
+
+    final statusModel = theme.ClientStatus.values.byName(client.status);
+    final showWarning = client.returnCount >= 3;
+
     return Card(
       child: Padding(
         padding: TalabatiSpacing.cardPadding,
@@ -113,7 +145,7 @@ class _ClientCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: _getAvatarColor(name),
+                  backgroundColor: avatarColor,
                   child: Text(
                     initials,
                     style: const TextStyle(
@@ -132,17 +164,17 @@ class _ClientCard extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              name,
+                              client.name,
                               style: Theme.of(context).textTheme.titleMedium,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (isHighReturn) ...[
+                          if (showWarning) ...[
                             const SizedBox(width: 4),
                             const Icon(
                               Icons.warning_amber_rounded,
                               color: TalabatiColors.warning,
-                              size: 18,
+                              size: 16,
                             ),
                           ],
                         ],
@@ -151,16 +183,16 @@ class _ClientCard extends StatelessWidget {
                         children: [
                           const Icon(Icons.location_on_outlined, size: 14, color: TalabatiColors.textSecondary),
                           const SizedBox(width: 4),
-                          Text('Oran, DZ', style: Theme.of(context).textTheme.bodyMedium),
+                          Text('${client.wilaya}, DZ', style: Theme.of(context).textTheme.bodyMedium),
                         ],
                       ),
                     ],
                   ),
                 ),
                 StatusBadge(
-                  label: status.label,
-                  backgroundColor: status.backgroundColor,
-                  textColor: status.textColor,
+                  label: statusModel.label,
+                  backgroundColor: statusModel.backgroundColor,
+                  textColor: statusModel.textColor,
                 ),
               ],
             ),
@@ -170,7 +202,7 @@ class _ClientCard extends StatelessWidget {
                 const Icon(Icons.phone_outlined, size: 20, color: TalabatiColors.textSecondary),
                 const SizedBox(width: TalabatiSpacing.sm),
                 Text(
-                  '0550 12 34 56',
+                  client.phone,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -178,20 +210,46 @@ class _ClientCard extends StatelessWidget {
                 const Spacer(),
                 TalabatiActionButton(
                   icon: Icons.phone_enabled_rounded,
-                  onTap: () {},
                   isPrimary: false,
+                  onTap: () {
+                    final uri = Uri.parse('tel:${client.phone}');
+                    launchUrl(uri);
+                  },
                 ),
                 const SizedBox(width: TalabatiSpacing.sm),
                 TalabatiActionButton(
-                  icon: Icons.chat_outlined,
-                  onTap: () {},
+                  icon: FontAwesomeIcons.whatsapp,
                   isPrimary: false,
+                  backgroundColor: Colors.green,
+                  iconColor: Colors.white,
+                  onTap: () {
+                    final phone = client.phone.replaceAll(RegExp(r'\D'), '');
+                    final formattedPhone = phone.startsWith('0') ? '213${phone.substring(1)}' : phone;
+                    final uri = Uri.parse('https://wa.me/$formattedPhone');
+                    launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
                 ),
+                if (client.instagramHandle != null) ...[
+                  const SizedBox(width: TalabatiSpacing.sm),
+                  TalabatiActionButton(
+                    icon: FontAwesomeIcons.instagram,
+                    isPrimary: false,
+                    onTap: () {
+                      final uri = Uri.parse('https://instagram.com/${client.instagramHandle}');
+                      launchUrl(uri, mode: LaunchMode.externalApplication);
+                    },
+                  ),
+                ],
                 const SizedBox(width: TalabatiSpacing.sm),
                 TalabatiActionButton(
                   icon: Icons.receipt_long_outlined,
-                  onTap: () {},
                   isPrimary: false,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                    );
+                  },
                 ),
               ],
             ),

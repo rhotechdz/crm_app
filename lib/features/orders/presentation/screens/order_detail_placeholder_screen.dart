@@ -333,7 +333,7 @@ class _OrderDetailContentState extends ConsumerState<_OrderDetailContent> {
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.danger,
                       side: BorderSide(
-                        color: AppColors.danger.withOpacity(0.3),
+                        color: AppColors.danger.withValues(alpha: 0.3),
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),

@@ -6,7 +6,6 @@ import 'package:talabati/theme/talabati_theme.dart' as theme;
 import 'package:talabati/widgets/talabati_app_bar.dart';
 import 'package:talabati/widgets/status_badge.dart';
 import 'package:talabati/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:talabati/features/orders/data/models/order_status.dart';
 import 'package:talabati/features/dashboard/data/repositories/dashboard_repository.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -179,7 +178,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildTotalRevenueCard(BuildContext context, double totalRevenue) {
-    final formattedValue = NumberFormat('#,###', 'en_US').format(totalRevenue) + ' DA';
+    final formattedValue = '${NumberFormat('#,###', 'en_US').format(totalRevenue)} DA';
     return Card(
       child: Padding(
         padding: TalabatiSpacing.cardPadding,
@@ -222,7 +221,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildRevenueHighlightCard(BuildContext context, double thisMonthRevenue, double monthlyTarget, double ratio) {
-    final formattedRevenue = NumberFormat('#,###', 'en_US').format(thisMonthRevenue) + ' DA';
+    final formattedRevenue = '${NumberFormat('#,###', 'en_US').format(thisMonthRevenue)} DA';
     final formattedTarget = NumberFormat('#,###', 'en_US').format(monthlyTarget);
     final percentage = (ratio * 100).round();
 
@@ -248,7 +247,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -267,7 +266,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -286,14 +285,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 'Target: $formattedTarget DA',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
               Text(
                 '$percentage% Reached',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -303,7 +302,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
               value: ratio,
-              backgroundColor: Colors.white.withOpacity(0.24),
+              backgroundColor: Colors.white.withValues(alpha: 0.24),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 6,
             ),
@@ -322,7 +321,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
 
     
-    final formattedAmount = NumberFormat('#,###', 'en_US').format(order.totalAmount) + ' DA';
+    final formattedAmount = '${NumberFormat('#,###', 'en_US').format(order.totalAmount)} DA';
 
     return Card(
       elevation: 0.5,
