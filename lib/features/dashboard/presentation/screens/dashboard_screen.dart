@@ -7,6 +7,8 @@ import 'package:talabati/widgets/talabati_app_bar.dart';
 import 'package:talabati/widgets/status_badge.dart';
 import 'package:talabati/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:talabati/features/dashboard/data/repositories/dashboard_repository.dart';
+import 'package:talabati/features/home/presentation/providers/navigation_provider.dart';
+import 'package:talabati/features/orders/presentation/screens/order_detail_placeholder_screen.dart';
 import 'package:talabati/features/orders/presentation/screens/add_edit_order_screen.dart';
 import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
 import 'package:talabati/features/clients/presentation/screens/add_edit_client_screen.dart';
@@ -109,7 +111,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () => ref.read(navigationIndexProvider.notifier).state = 1,
                     child: const Text('View All'),
                   ),
                 ],
@@ -143,7 +145,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.sm),
                       itemBuilder: (context, index) {
                         final order = dashboard.recentOrders[index];
-                        return _buildRecentOrderListItem(context, order);
+                        return InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OrderDetailPlaceholderScreen(
+                                  orderId: order.orderId,
+                                ),
+                              ),
+                            );
+                          },
+                          child: _buildRecentOrderListItem(context, order),
+                        );
                       },
                     ),
               const SizedBox(height: 100), // Bottom spacing
