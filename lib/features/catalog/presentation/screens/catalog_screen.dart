@@ -1,23 +1,68 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:talabati/theme/talabati_theme.dart';
 import 'package:talabati/widgets/talabati_app_bar.dart';
 import 'package:talabati/widgets/talabati_search_bar.dart';
 import 'package:talabati/widgets/talabati_filter_chips.dart';
-import 'package:talabati/widgets/status_badge.dart';
+import 'package:talabati/features/catalog/presentation/providers/products_provider.dart';
+import 'package:talabati/features/catalog/data/models/product.dart';
+import 'package:talabati/features/catalog/presentation/screens/add_edit_product_screen.dart';
 
-class CatalogScreen extends StatefulWidget {
+extension ProductExtension on Product {
+  // Mapping missing/different fields to prompt names for compatibility
+  String? get category => null; // Not currently in the model
+  String get sku => id.substring(0, 8).toUpperCase(); 
+  int get stock => stockQuantity ?? 0;
+  String? get imagePath => imageUrl;
+}
+
+class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key});
 
   @override
-  State<CatalogScreen> createState() => _CatalogScreenState();
+  ConsumerState<CatalogScreen> createState() => _CatalogScreenState();
 }
 
-class _CatalogScreenState extends State<CatalogScreen> {
-  int _selectedFilterIndex = 0;
-  final List<String> _filters = ['All Products', 'Electronics', 'Home', 'Fashion'];
+class _CatalogScreenState extends ConsumerState<CatalogScreen> {
+  String _selectedCategory = 'All Products';
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
+    final products = ref.watch(productsProvider);
+    
+    // Category chips logic
+    final categories = [
+      'All Products',
+      ...products
+          .map((p) => p.category)
+          .whereType<String>()
+          .toSet()
+          .toList()
+        ..sort()
+    ];
+
+    // Filtered list logic
+    final filteredList = products.where((p) {
+      // Category filter
+      if (_selectedCategory != 'All Products' && p.category != _selectedCategory) {
+        return false;
+      }
+      
+      // Search filter (name or sku)
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final matchesName = p.name.toLowerCase().contains(query);
+        final matchesSku = p.sku.toLowerCase().contains(query);
+        if (!matchesName && !matchesSku) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+
     return Scaffold(
       appBar: const TalabatiAppBar(title: 'Talabati'),
       body: Column(
@@ -33,42 +78,53 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 Text(
-                  '48 Active Products',
+                  '${products.length} Active Products',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: TalabatiSpacing.lg),
-                const TalabatiSearchBar(
+                TalabatiSearchBar(
                   hintText: 'Search products by name or SKU...',
+                  onChanged: (value) => setState(() => _searchQuery = value),
                 ),
                 const SizedBox(height: TalabatiSpacing.md),
                 TalabatiFilterChips(
-                  options: _filters,
-                  selectedIndex: _selectedFilterIndex,
-                  onSelected: (index) => setState(() => _selectedFilterIndex = index),
+                  options: categories,
+                  selectedIndex: categories.indexOf(_selectedCategory),
+                  onSelected: (index) {
+                    setState(() => _selectedCategory = categories[index]);
+                  },
                 ),
               ],
             ),
           ),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: 3,
-              separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.lg),
-              itemBuilder: (context, index) {
-                final isLowStock = index == 1;
-                return _ProductCard(
-                  name: index == 0 ? 'Wireless Earbuds' : (isLowStock ? 'Premium Watch' : 'Leather Wallet'),
-                  price: index == 0 ? '4,500 DA' : (isLowStock ? '12,000 DA' : '3,200 DA'),
-                  stockStatus: index == 0 ? StockStatus.inStock : (isLowStock ? StockStatus.lowStock : StockStatus.inStock),
-                  stockQuantity: index == 0 ? 24 : (isLowStock ? 4 : 12),
-                );
-              },
-            ),
+            child: filteredList.isEmpty 
+              ? Center(
+                  child: Text(
+                    'No products found',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: TalabatiColors.textSecondary,
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                  itemCount: filteredList.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.lg),
+                  itemBuilder: (context, index) {
+                    return _ProductCard(product: filteredList[index]);
+                  },
+                ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddEditProductScreen()),
+          );
+        },
         child: const Icon(Icons.add_box_outlined),
       ),
     );
@@ -76,20 +132,24 @@ class _CatalogScreenState extends State<CatalogScreen> {
 }
 
 class _ProductCard extends StatelessWidget {
-  final String name;
-  final String price;
-  final StockStatus stockStatus;
-  final int stockQuantity;
+  final Product product;
 
-  const _ProductCard({
-    required this.name,
-    required this.price,
-    required this.stockStatus,
-    required this.stockQuantity,
-  });
+  const _ProductCard({required this.product});
 
   @override
   Widget build(BuildContext context) {
+    // Stock Status determination
+    final StockStatus stockStatus;
+    if (product.stock <= 0) {
+      stockStatus = StockStatus.outOfStock;
+    } else if (product.stock <= 10) {
+      stockStatus = StockStatus.lowStock;
+    } else {
+      stockStatus = StockStatus.inStock;
+    }
+
+    final formattedPrice = '${NumberFormat('#,###').format(product.sellingPrice)} DA';
+
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,16 +162,36 @@ class _ProductCard extends StatelessWidget {
                   height: 160,
                   width: double.infinity,
                   color: TalabatiColors.badgeNeutralBg,
-                  child: const Icon(Icons.image_outlined, size: 48, color: TalabatiColors.textSecondary),
+                  child: product.imagePath != null && File(product.imagePath!).existsSync()
+                      ? Image.file(File(product.imagePath!), fit: BoxFit.cover)
+                      : const Icon(Icons.image_not_supported_outlined,
+                          color: TalabatiColors.textSecondary, size: 48),
                 ),
               ),
               Positioned(
                 top: 8,
                 right: 8,
-                child: StatusBadge(
-                  label: stockStatus.label,
-                  backgroundColor: stockStatus.backgroundColor,
-                  textColor: stockStatus.textColor,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: stockStatus.backgroundColor,
+                    borderRadius: TalabatiRadius.badgeRadius,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(stockStatus.icon, size: 14, color: stockStatus.textColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        stockStatus.label,
+                        style: TextStyle(
+                          color: stockStatus.textColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -125,12 +205,15 @@ class _ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      name,
+                      product.name,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     Text(
-                      price,
-                      style: Theme.of(context).textTheme.labelLarge,
+                      formattedPrice,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: TalabatiColors.textPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -140,8 +223,10 @@ class _ProductCard extends StatelessWidget {
                     const Icon(Icons.inventory_2_outlined, size: 14, color: TalabatiColors.textSecondary),
                     const SizedBox(width: 4),
                     Text(
-                      '$stockQuantity in stock',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      '${product.stock} in stock',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: TalabatiColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -149,7 +234,14 @@ class _ProductCard extends StatelessWidget {
                 Row(
                   children: [
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddEditProductScreen(product: product),
+                          ),
+                        );
+                      },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: Size.zero,
