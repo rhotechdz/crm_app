@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:talabati/core/theme/app_colors.dart';
 import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
 import 'package:talabati/features/orders/data/models/delivery_company.dart';
 import 'package:talabati/features/orders/data/models/order.dart';
@@ -328,6 +329,17 @@ class _OrderDetailContentState extends ConsumerState<_OrderDetailContent> {
               children: [
                 Expanded(
                   child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.danger,
+                      side: BorderSide(
+                        color: AppColors.danger.withOpacity(0.3),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
                     onPressed: () {
                       _returnReasonController.clear();
                       setState(() {
@@ -341,9 +353,18 @@ class _OrderDetailContentState extends ConsumerState<_OrderDetailContent> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.textSecondary,
+                      side: const BorderSide(color: AppColors.divider),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
                     onPressed: () =>
                         _updateStatus(ref, order.id, OrderStatus.cancelled),
-                    child: const Text('Cancel'),
+                    child: const Text('Cancel order'),
                   ),
                 ),
               ],
