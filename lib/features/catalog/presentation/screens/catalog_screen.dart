@@ -36,6 +36,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     // Category chips logic
     final categories = [
       'All Products',
+      'In Stock',
+      'Out of Stock',
       ...products
           .map((p) => p.category)
           .whereType<String>()
@@ -46,8 +48,12 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
     // Filtered list logic
     final filteredList = products.where((p) {
-      // Category filter
-      if (_selectedCategory != 'All Products' && p.category != _selectedCategory) {
+      // Category / Stock filter
+      if (_selectedCategory == 'In Stock') {
+        if (p.stock <= 0) return false;
+      } else if (_selectedCategory == 'Out of Stock') {
+        if (p.stock > 0) return false;
+      } else if (_selectedCategory != 'All Products' && p.category != _selectedCategory) {
         return false;
       }
       
@@ -150,19 +156,19 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             MaterialPageRoute(builder: (context) => const AddEditProductScreen()),
           );
         },
-        child: const Icon(Icons.add_box_outlined),
+        child: const Icon(Icons.add),
       ),
     );
   }
 }
 
-class _ProductCard extends StatelessWidget {
+class _ProductCard extends ConsumerWidget {
   final Product product;
 
   const _ProductCard({required this.product});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Stock Status determination
     final StockStatus stockStatus;
     if (product.stock <= 0) {
@@ -275,13 +281,46 @@ class _ProductCard extends StatelessWidget {
                       child: const Text('Edit Details'),
                     ),
                     const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.visibility_outlined, size: 20),
-                      onPressed: () {},
-                    ),
-                    IconButton(
+                    PopupMenuButton<String>(
                       icon: const Icon(Icons.more_vert, size: 20),
-                      onPressed: () {},
+                      onSelected: (value) async {
+                        if (value == 'delete') {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Product'),
+                              content: Text('Are you sure you want to delete ${product.name}?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            ref.read(productsProvider.notifier).deleteProduct(product.id);
+                          }
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Delete', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
