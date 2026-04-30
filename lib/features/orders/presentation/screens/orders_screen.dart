@@ -95,14 +95,48 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
           ),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: filteredList.length,
-              separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.base),
-              itemBuilder: (context, index) {
-                return _OrderCard(entry: filteredList[index]);
-              },
-            ),
+            child: filteredList.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: TalabatiColors.surface,
+                            borderRadius: BorderRadius.circular(TalabatiRadius.lg),
+                          ),
+                          child: const Icon(
+                            Icons.assignment_outlined,
+                            size: 36,
+                            color: TalabatiColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: TalabatiSpacing.lg),
+                        Text(
+                          allOrders.isEmpty ? "No orders yet" : "No results found",
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: TalabatiSpacing.sm),
+                        Text(
+                          allOrders.isEmpty
+                              ? "Your orders will appear here\nonce you create them."
+                              : "Try a different search term.",
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    itemCount: filteredList.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.base),
+                    itemBuilder: (context, index) {
+                      return _OrderCard(entry: filteredList[index]);
+                    },
+                  ),
           ),
         ],
       ),

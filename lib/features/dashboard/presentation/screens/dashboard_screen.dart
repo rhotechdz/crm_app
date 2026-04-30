@@ -108,16 +108,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: TalabatiSpacing.sm),
             
             // Recent Orders List
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: dashboard.recentOrders.length > 5 ? 5 : dashboard.recentOrders.length,
-              separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.sm),
-              itemBuilder: (context, index) {
-                final order = dashboard.recentOrders[index];
-                return _buildRecentOrderListItem(context, order);
-              },
-            ),
+            dashboard.recentOrders.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.receipt_long_outlined,
+                          color: TalabatiColors.textSecondary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "No recent orders",
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: dashboard.recentOrders.length > 5 ? 5 : dashboard.recentOrders.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.sm),
+                    itemBuilder: (context, index) {
+                      final order = dashboard.recentOrders[index];
+                      return _buildRecentOrderListItem(context, order);
+                    },
+                  ),
             const SizedBox(height: 100), // Bottom spacing
           ],
         ),

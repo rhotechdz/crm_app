@@ -98,23 +98,48 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             ),
           ),
           Expanded(
-            child: filteredList.isEmpty 
-              ? Center(
-                  child: Text(
-                    'No products found',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: TalabatiColors.textSecondary,
+            child: filteredList.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: TalabatiColors.surface,
+                            borderRadius: BorderRadius.circular(TalabatiRadius.lg),
+                          ),
+                          child: const Icon(
+                            Icons.inventory_2_outlined,
+                            size: 36,
+                            color: TalabatiColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: TalabatiSpacing.lg),
+                        Text(
+                          products.isEmpty ? "Your catalog is empty" : "No results found",
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: TalabatiSpacing.sm),
+                        Text(
+                          products.isEmpty
+                              ? "Add products to start\ncreating orders."
+                              : "Try a different search term.",
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    itemCount: filteredList.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.lg),
+                    itemBuilder: (context, index) {
+                      return _ProductCard(product: filteredList[index]);
+                    },
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                  itemCount: filteredList.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.lg),
-                  itemBuilder: (context, index) {
-                    return _ProductCard(product: filteredList[index]);
-                  },
-                ),
           ),
         ],
       ),
