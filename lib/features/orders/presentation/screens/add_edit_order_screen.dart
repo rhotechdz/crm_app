@@ -50,9 +50,16 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     _notesController = TextEditingController(text: existing?.notes);
     _selectedClientId = existing?.clientId;
     _selectedWilaya = existing?.wilaya;
-    _selectedDeliveryCompany = existing?.deliveryCompany;
     _isConfirmedByPhone = existing?.isConfirmedByPhone ?? false;
     _items = List<OrderItem>.from(existing?.items ?? const []);
+
+    // Set initial delivery company
+    if (existing != null) {
+      _selectedDeliveryCompany = existing.deliveryCompany;
+    } else {
+      // For new orders, use the last picked company from the provider
+      _selectedDeliveryCompany = ref.read(ordersProvider).lastDeliveryCompany;
+    }
   }
 
   @override
