@@ -7,6 +7,11 @@ import 'package:talabati/widgets/talabati_app_bar.dart';
 import 'package:talabati/widgets/status_badge.dart';
 import 'package:talabati/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:talabati/features/dashboard/data/repositories/dashboard_repository.dart';
+import 'package:talabati/features/orders/presentation/screens/add_edit_order_screen.dart';
+import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
+import 'package:talabati/features/clients/presentation/screens/add_edit_client_screen.dart';
+import 'package:talabati/features/catalog/presentation/providers/products_provider.dart';
+import 'package:talabati/features/catalog/presentation/screens/add_edit_product_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -142,7 +147,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          final clients = ref.read(clientsProvider);
+          final products = ref.read(productsProvider);
+
+          final hasClients = clients.isNotEmpty;
+          final hasProducts = products.isNotEmpty;
+
+          if (hasClients && hasProducts) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddEditOrderScreen()),
+            );
+          } else {
+            showModalBottomSheet(
+              context: context,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(TalabatiRadius.lg)),
+              ),
+              builder: (_) => _OrderBlockedSheet(
+                hasClients: hasClients,
+                hasProducts: hasProducts,
+              ),
+            );
+          }
+        },
         child: const Icon(Icons.add),
       ),
     );
@@ -395,6 +424,100 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _OrderBlockedSheet extends StatelessWidget {
+  final bool hasClients;
+  final bool hasProducts;
+
+  const _OrderBlockedSheet({
+    required this.hasClients,
+    required this.hasProducts,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String bodyText;
+    if (!hasClients && !hasProducts) {
+      bodyText = "You need at least one client and one product before creating an order.";
+    } else if (!hasClients) {
+      bodyText = "You need at least one client before creating an order.";
+    } else {
+      bodyText = "You need at least one product before creating an order.";
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.lock_outline_rounded, size: 40, color: TalabatiColors.warning),
+          const SizedBox(height: TalabatiSpacing.md),
+          Text(
+            "Can't create an order yet",
+            style: Theme.of(context).textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: TalabatiSpacing.sm),
+          Text(
+            bodyText,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: TalabatiColors.textSecondary,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: TalabatiSpacing.xl),
+          if (!hasClients)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: TalabatiColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(TalabatiRadius.md),
+                  ),
+                ),
+                icon: const Icon(Icons.person_add_outlined),
+                label: const Text("Add a Client"),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddEditClientScreen()),
+                  );
+                },
+              ),
+            ),
+          if (!hasClients && !hasProducts) const SizedBox(height: TalabatiSpacing.sm),
+          if (!hasProducts)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: TalabatiColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(TalabatiRadius.md),
+                  ),
+                ),
+                icon: const Icon(Icons.add_box_outlined),
+                label: const Text("Add a Product"),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddEditProductScreen()),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

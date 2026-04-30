@@ -8,6 +8,7 @@ import 'package:talabati/widgets/talabati_search_bar.dart';
 import 'package:talabati/widgets/talabati_action_button.dart';
 import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
 import 'package:talabati/features/clients/data/models/client.dart';
+import 'package:talabati/features/clients/presentation/screens/add_edit_client_screen.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -108,7 +109,12 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddEditClientScreen()),
+          );
+        },
         child: const Icon(Icons.person_add_outlined),
       ),
     );
