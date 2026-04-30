@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talabati/core/constants/wilayas.dart';
 import 'package:talabati/features/clients/data/models/client.dart';
+import 'package:talabati/theme/talabati_theme.dart';
 import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
 
 class AddEditClientScreen extends ConsumerStatefulWidget {
@@ -164,11 +165,28 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: TalabatiColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: TalabatiRadius.buttonRadius,
+                  ),
+                  elevation: 0,
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                child: _isSaving 
-                  ? const CircularProgressIndicator()
-                  : Text(isEditing ? 'Update Client' : 'Save Client'),
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      )
+                    : Text(isEditing ? 'Update Client' : 'Save Client'),
               ),
             ],
           ),

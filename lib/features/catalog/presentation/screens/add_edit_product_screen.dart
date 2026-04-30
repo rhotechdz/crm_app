@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
+import 'package:talabati/theme/talabati_theme.dart';
 import 'package:talabati/features/catalog/data/models/product.dart';
 import 'package:talabati/features/catalog/data/models/product_variant.dart';
 import 'package:talabati/features/catalog/presentation/providers/products_provider.dart';
@@ -437,10 +438,27 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: TalabatiColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: TalabatiRadius.buttonRadius,
+                  ),
+                  elevation: 0,
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 child: _isSaving
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      )
                     : Text(isEditing ? 'Update Product' : 'Save Product'),
               ),
             ],

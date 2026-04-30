@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:talabati/theme/talabati_theme.dart' hide OrderStatus;
 import 'package:talabati/core/constants/wilayas.dart';
 import 'package:talabati/features/clients/data/models/client.dart';
 import 'package:talabati/features/clients/presentation/providers/clients_provider.dart';
@@ -189,10 +190,27 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: TalabatiColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: TalabatiRadius.buttonRadius,
+                  ),
+                  elevation: 0,
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 child: _isSaving
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      )
                     : Text(isEditing ? 'Update Order' : 'Save Order'),
               ),
             ],
