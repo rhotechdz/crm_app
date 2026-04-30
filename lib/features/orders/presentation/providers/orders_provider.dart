@@ -17,12 +17,14 @@ class OrdersState {
   final String searchQuery;
   final OrderStatus? statusFilter;
   final DeliveryCompany? lastDeliveryCompany;
+  final String? lastWilaya;
 
   const OrdersState({
     this.orders = const [],
     this.searchQuery = '',
     this.statusFilter,
     this.lastDeliveryCompany,
+    this.lastWilaya,
   });
 
   List<OrderWithClient> get filteredOrders {
@@ -43,6 +45,7 @@ class OrdersState {
     String? searchQuery,
     Object? statusFilter = _unset,
     DeliveryCompany? lastDeliveryCompany,
+    String? lastWilaya,
   }) {
     return OrdersState(
       orders: orders ?? this.orders,
@@ -51,6 +54,7 @@ class OrdersState {
           ? this.statusFilter
           : statusFilter as OrderStatus?,
       lastDeliveryCompany: lastDeliveryCompany ?? this.lastDeliveryCompany,
+      lastWilaya: lastWilaya ?? this.lastWilaya,
     );
   }
 }
@@ -68,26 +72,37 @@ class OrdersNotifier extends Notifier<OrdersState> {
 
   Future<void> _init() async {
     await loadOrders();
-    await _loadLastDeliveryCompany();
+    await _loadPreferences();
   }
 
-  Future<void> _loadLastDeliveryCompany() async {
+  Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    final name = prefs.getString('last_delivery_company');
-    if (name != null) {
+    
+    // Load Delivery Company
+    final companyName = prefs.getString('last_delivery_company');
+    if (companyName != null) {
       try {
-        final company = DeliveryCompany.values.byName(name);
+        final company = DeliveryCompany.values.byName(companyName);
         state = state.copyWith(lastDeliveryCompany: company);
-      } catch (_) {
-        // Handle case where enum name might have changed
-      }
+      } catch (_) {}
+    }
+
+    // Load Wilaya
+    final wilaya = prefs.getString('last_wilaya');
+    if (wilaya != null) {
+      state = state.copyWith(lastWilaya: wilaya);
     }
   }
 
-  Future<void> _saveLastDeliveryCompany(DeliveryCompany company) async {
+  Future<void> _savePreferences(Order order) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('last_delivery_company', company.name);
-    state = state.copyWith(lastDeliveryCompany: company);
+    await prefs.setString('last_delivery_company', order.deliveryCompany.name);
+    await prefs.setString('last_wilaya', order.wilaya);
+    
+    state = state.copyWith(
+      lastDeliveryCompany: order.deliveryCompany,
+      lastWilaya: order.wilaya,
+    );
   }
 
   Future<void> loadOrders() async {
@@ -97,13 +112,13 @@ class OrdersNotifier extends Notifier<OrdersState> {
 
   Future<void> addOrder(Order order) async {
     await _repository.addOrder(order);
-    await _saveLastDeliveryCompany(order.deliveryCompany);
+    await _savePreferences(order);
     await loadOrders();
   }
 
   Future<void> updateOrder(Order order) async {
     await _repository.updateOrder(order);
-    await _saveLastDeliveryCompany(order.deliveryCompany);
+    await _savePreferences(order);
     await loadOrders();
   }
 

@@ -53,12 +53,15 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     _isConfirmedByPhone = existing?.isConfirmedByPhone ?? false;
     _items = List<OrderItem>.from(existing?.items ?? const []);
 
-    // Set initial delivery company
+    // Set initial delivery company and wilaya
     if (existing != null) {
       _selectedDeliveryCompany = existing.deliveryCompany;
+      _selectedWilaya = existing.wilaya;
     } else {
-      // For new orders, use the last picked company from the provider
-      _selectedDeliveryCompany = ref.read(ordersProvider).lastDeliveryCompany;
+      // For new orders, use the last picked values from the provider
+      final lastPrefs = ref.read(ordersProvider);
+      _selectedDeliveryCompany = lastPrefs.lastDeliveryCompany;
+      _selectedWilaya = lastPrefs.lastWilaya;
     }
   }
 
