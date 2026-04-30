@@ -127,4 +127,51 @@ class DashboardNotifier extends Notifier<DashboardState> {
       debugPrint('Dashboard load error: $e');
     }
   }
+
+  Future<void> refresh() async {
+    try {
+      final totalOrdersFuture = _repository.getTotalOrdersCount();
+      final todaysOrdersFuture = _repository.getTodaysOrdersCount();
+      final pendingConfirmationFuture = _repository.getPendingConfirmationCount();
+      final withCourierFuture = _repository.getWithCourierCount();
+      final deliveredAwaitingCollectionFuture = _repository
+          .getDeliveredAwaitingCollectionCount();
+      final monthlyRevenueFuture = _repository.getMonthlyRevenue();
+      final monthlyProfitFuture = _repository.getMonthlyProfit();
+      final pendingRevenueFuture = _repository.getPendingRevenue();
+      final returnsThisMonthFuture = _repository.getReturnsThisMonthCount();
+      final topReturningClientsFuture = _repository.getTopReturningClients();
+      final recentOrdersFuture = _repository.getRecentOrders();
+
+      await Future.wait([
+        totalOrdersFuture,
+        todaysOrdersFuture,
+        pendingConfirmationFuture,
+        withCourierFuture,
+        deliveredAwaitingCollectionFuture,
+        monthlyRevenueFuture,
+        monthlyProfitFuture,
+        pendingRevenueFuture,
+        returnsThisMonthFuture,
+        topReturningClientsFuture,
+        recentOrdersFuture,
+      ]);
+
+      state = DashboardState(
+        totalOrders: await totalOrdersFuture,
+        todaysOrders: await todaysOrdersFuture,
+        pendingConfirmation: await pendingConfirmationFuture,
+        withCourier: await withCourierFuture,
+        deliveredAwaitingCollection: await deliveredAwaitingCollectionFuture,
+        monthlyRevenue: await monthlyRevenueFuture,
+        monthlyProfit: await monthlyProfitFuture,
+        pendingRevenue: await pendingRevenueFuture,
+        returnsThisMonth: await returnsThisMonthFuture,
+        topReturningClients: await topReturningClientsFuture,
+        recentOrders: await recentOrdersFuture,
+      );
+    } catch (e) {
+      debugPrint('Dashboard refresh error: $e');
+    }
+  }
 }

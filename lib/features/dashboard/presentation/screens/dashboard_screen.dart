@@ -41,109 +41,114 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: const TalabatiAppBar(title: 'Talabati'),
-      body: SingleChildScrollView(
-        padding: TalabatiSpacing.screenPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: TalabatiSpacing.sm),
-            Text(
-              'Sbah el khir, Admin',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: TalabatiSpacing.xs),
-            Text(
-              'Here is what\'s happening with Talabati today.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: TalabatiSpacing.xl),
-            
-            // Stats Row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    icon: Icons.inventory_2_outlined,
-                    label: 'TODAY\'S ORDERS',
-                    value: dashboard.todaysOrders.toString(),
-                    badgeLabel: null, // growth percent not available
-                    badgeBg: TalabatiColors.successLight,
-                    badgeText: TalabatiColors.success,
-                  ),
-                ),
-                const SizedBox(width: TalabatiSpacing.base),
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    icon: Icons.phone_outlined,
-                    label: 'PENDING CALLS',
-                    value: dashboard.pendingConfirmation.toString(),
-                    badgeLabel: dashboard.pendingConfirmation > 0 ? 'URGENT' : null,
-                    badgeBg: TalabatiColors.dangerLight,
-                    badgeText: TalabatiColors.danger,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: TalabatiSpacing.base),
-            
-            // Total Revenue Card
-            _buildTotalRevenueCard(context, totalRevenue),
-            const SizedBox(height: TalabatiSpacing.base),
-            
-            // Revenue Highlight Card
-            _buildRevenueHighlightCard(context, dashboard.monthlyRevenue, monthlyTarget, ratio),
-            const SizedBox(height: TalabatiSpacing.xl),
-            
-            // Recent Orders Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Recent Orders',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('View All'),
-                ),
-              ],
-            ),
-            const SizedBox(height: TalabatiSpacing.sm),
-            
-            // Recent Orders List
-            dashboard.recentOrders.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.receipt_long_outlined,
-                          color: TalabatiColors.textSecondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "No recent orders",
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(dashboardProvider.notifier).refresh(),
+        color: TalabatiColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: TalabatiSpacing.screenPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: TalabatiSpacing.sm),
+              Text(
+                'Sbah el khir, Admin',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: TalabatiSpacing.xs),
+              Text(
+                'Here is what\'s happening with Talabati today.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: TalabatiSpacing.xl),
+              
+              // Stats Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.inventory_2_outlined,
+                      label: 'TODAY\'S ORDERS',
+                      value: dashboard.todaysOrders.toString(),
+                      badgeLabel: null, // growth percent not available
+                      badgeBg: TalabatiColors.successLight,
+                      badgeText: TalabatiColors.success,
                     ),
-                  )
-                : ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: dashboard.recentOrders.length > 5 ? 5 : dashboard.recentOrders.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.sm),
-                    itemBuilder: (context, index) {
-                      final order = dashboard.recentOrders[index];
-                      return _buildRecentOrderListItem(context, order);
-                    },
                   ),
-            const SizedBox(height: 100), // Bottom spacing
-          ],
+                  const SizedBox(width: TalabatiSpacing.base),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.phone_outlined,
+                      label: 'PENDING CALLS',
+                      value: dashboard.pendingConfirmation.toString(),
+                      badgeLabel: dashboard.pendingConfirmation > 0 ? 'URGENT' : null,
+                      badgeBg: TalabatiColors.dangerLight,
+                      badgeText: TalabatiColors.danger,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: TalabatiSpacing.base),
+              
+              // Total Revenue Card
+              _buildTotalRevenueCard(context, totalRevenue),
+              const SizedBox(height: TalabatiSpacing.base),
+              
+              // Revenue Highlight Card
+              _buildRevenueHighlightCard(context, dashboard.monthlyRevenue, monthlyTarget, ratio),
+              const SizedBox(height: TalabatiSpacing.xl),
+              
+              // Recent Orders Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Orders',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text('View All'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: TalabatiSpacing.sm),
+              
+              // Recent Orders List
+              dashboard.recentOrders.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.receipt_long_outlined,
+                            color: TalabatiColors.textSecondary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "No recent orders",
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: dashboard.recentOrders.length > 5 ? 5 : dashboard.recentOrders.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.sm),
+                      itemBuilder: (context, index) {
+                        final order = dashboard.recentOrders[index];
+                        return _buildRecentOrderListItem(context, order);
+                      },
+                    ),
+              const SizedBox(height: 100), // Bottom spacing
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
