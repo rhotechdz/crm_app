@@ -1,18 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:talabati/theme/talabati_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:talabati/theme/talabati_theme.dart' hide OrderStatus;
+import 'package:talabati/theme/talabati_theme.dart' as theme;
 import 'package:talabati/widgets/talabati_app_bar.dart';
 import 'package:talabati/widgets/status_badge.dart';
+import 'package:talabati/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:talabati/features/orders/data/models/order_status.dart';
+import 'package:talabati/features/dashboard/data/repositories/dashboard_repository.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
+    final dashboard = ref.watch(dashboardProvider);
+
+    if (dashboard.isLoading) {
+      return const Scaffold(
+        appBar: TalabatiAppBar(title: 'Talabati'),
+        body: Center(
+          child: CircularProgressIndicator(color: TalabatiColors.primary),
+        ),
+      );
+    }
+
+    // Adapt state data to UI needs
+    final totalRevenue = dashboard.monthlyRevenue + dashboard.pendingRevenue;
+    const monthlyTarget = 3500000.0;
+    final ratio = (dashboard.monthlyRevenue / monthlyTarget).clamp(0.0, 1.0);
+
     return Scaffold(
       appBar: const TalabatiAppBar(title: 'Talabati'),
       body: SingleChildScrollView(
@@ -40,8 +62,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     context,
                     icon: Icons.inventory_2_outlined,
                     label: 'TODAY\'S ORDERS',
-                    value: '42',
-                    badgeLabel: '+12%',
+                    value: dashboard.todaysOrders.toString(),
+                    badgeLabel: null, // growth percent not available
                     badgeBg: TalabatiColors.successLight,
                     badgeText: TalabatiColors.success,
                   ),
@@ -52,8 +74,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     context,
                     icon: Icons.phone_outlined,
                     label: 'PENDING CALLS',
-                    value: '08',
-                    badgeLabel: 'URGENT',
+                    value: dashboard.pendingConfirmation.toString(),
+                    badgeLabel: dashboard.pendingConfirmation > 0 ? 'URGENT' : null,
                     badgeBg: TalabatiColors.dangerLight,
                     badgeText: TalabatiColors.danger,
                   ),
@@ -63,11 +85,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: TalabatiSpacing.base),
             
             // Total Revenue Card
-            _buildTotalRevenueCard(context),
+            _buildTotalRevenueCard(context, totalRevenue),
             const SizedBox(height: TalabatiSpacing.base),
             
             // Revenue Highlight Card
-            _buildRevenueHighlightCard(context),
+            _buildRevenueHighlightCard(context, dashboard.monthlyRevenue, monthlyTarget, ratio),
             const SizedBox(height: TalabatiSpacing.xl),
             
             // Recent Orders Header
@@ -90,10 +112,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: 3,
+              itemCount: dashboard.recentOrders.length > 5 ? 5 : dashboard.recentOrders.length,
               separatorBuilder: (context, index) => const SizedBox(height: TalabatiSpacing.sm),
               itemBuilder: (context, index) {
-                return _buildRecentOrderListItem(context);
+                final order = dashboard.recentOrders[index];
+                return _buildRecentOrderListItem(context, order);
               },
             ),
             const SizedBox(height: 100), // Bottom spacing
@@ -112,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required IconData icon,
     required String label,
     required String value,
-    required String badgeLabel,
+    String? badgeLabel,
     required Color badgeBg,
     required Color badgeText,
   }) {
@@ -126,11 +149,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Icon(icon, color: TalabatiColors.primary, size: 24),
-                StatusBadge(
-                  label: badgeLabel,
-                  backgroundColor: badgeBg,
-                  textColor: badgeText,
-                ),
+                if (badgeLabel != null)
+                  StatusBadge(
+                    label: badgeLabel,
+                    backgroundColor: badgeBg,
+                    textColor: badgeText,
+                  )
+                else
+                  const SizedBox(height: 24),
               ],
             ),
             const SizedBox(height: TalabatiSpacing.lg),
@@ -152,7 +178,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTotalRevenueCard(BuildContext context) {
+  Widget _buildTotalRevenueCard(BuildContext context, double totalRevenue) {
+    final formattedValue = NumberFormat('#,###', 'en_US').format(totalRevenue) + ' DA';
     return Card(
       child: Padding(
         padding: TalabatiSpacing.cardPadding,
@@ -183,7 +210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: TalabatiSpacing.xs),
                 Text(
-                  '145,200 DA',
+                  formattedValue,
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ],
@@ -194,7 +221,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRevenueHighlightCard(BuildContext context) {
+  Widget _buildRevenueHighlightCard(BuildContext context, double thisMonthRevenue, double monthlyTarget, double ratio) {
+    final formattedRevenue = NumberFormat('#,###', 'en_US').format(thisMonthRevenue) + ' DA';
+    final formattedTarget = NumberFormat('#,###', 'en_US').format(monthlyTarget);
+    final percentage = (ratio * 100).round();
+
     return Container(
       width: double.infinity,
       padding: TalabatiSpacing.cardPadding,
@@ -222,9 +253,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: TalabatiSpacing.sm),
-                  const Text(
-                    '2,840,000 DA',
-                    style: TextStyle(
+                  Text(
+                    formattedRevenue,
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -252,14 +283,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Target: 3.5M DA',
+                'Target: $formattedTarget DA',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withOpacity(0.7),
                 ),
               ),
               Text(
-                '81% Reached',
+                '$percentage% Reached',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withOpacity(0.7),
@@ -271,7 +302,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
-              value: 0.81,
+              value: ratio,
               backgroundColor: Colors.white.withOpacity(0.24),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 6,
@@ -282,7 +313,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRecentOrderListItem(BuildContext context) {
+  Widget _buildRecentOrderListItem(BuildContext context, RecentOrderStat order) {
+    final themeStatus = theme.OrderStatus.values.byName(order.status.name);
+    final statusBadge = StatusBadge(
+      label: themeStatus.label,
+      backgroundColor: themeStatus.backgroundColor,
+      textColor: themeStatus.textColor,
+    );
+
+    
+    final formattedAmount = NumberFormat('#,###', 'en_US').format(order.totalAmount) + ' DA';
+
     return Card(
       elevation: 0.5,
       child: Padding(
@@ -311,11 +352,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Ahmed Benali',
+                    order.clientName,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Text(
-                    'Algiers, DZ',
+                    '${order.wilaya}, DZ',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -324,14 +365,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                StatusBadge(
-                  label: OrderStatus.confirmed.label,
-                  backgroundColor: OrderStatus.confirmed.backgroundColor,
-                  textColor: OrderStatus.confirmed.textColor,
-                ),
+                statusBadge,
                 const SizedBox(height: TalabatiSpacing.xs),
                 Text(
-                  '4,500 DA',
+                  formattedAmount,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontSize: 14,
                       ),
